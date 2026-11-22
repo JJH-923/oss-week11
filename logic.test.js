@@ -1,16 +1,17 @@
-// logic.test.js — 규칙 테스트. P1 에서 실행하고 P2 에서 늘립니다.
-//
-// 상황: 9주차에는 check.js 의 console.log 출력을 주석의 예상과 눈으로 비교했습니다.
-//       비교를 사람이 하므로 빠뜨릴 수 있고, 돌리는 것 자체를 잊을 수도 있습니다.
-// 할 일: P1  vitest 를 설치하고 아래 예시 테스트 1개를 통과시킵니다.
-//       P2  예시 테스트 아래에 테스트 8개를 더 씁니다. 경우 목록은 problems/P2_tests.md 의 표.
-//           기대값은 실행해 보기 전에 규칙 표를 보고 손으로 적습니다.
-// 실행: 터미널에서 npm test
-// 확인: P1 은 1 passed, P2 는 9 passed
-// 커밋 메시지: p1: vitest / p2: tests
+
+ // logic.test.js — 규칙 테스트. P1 에서 실행하고 P2 에서 늘립니다.
+ //
+ // 상황: 9주차에는 check.js 의 console.log 출력을 주석의 예상과 눈으로 비교했습니다.
+ //       비교를 사람이 하므로 빠뜨릴 수 있고, 돌리는 것 자체를 잊을 수도 있습니다.
+ // 할 일: P1  vitest 를 설치하고 아래 예시 테스트 1개를 통과시킵니다.
+ //       P2  예시 테스트 아래에 테스트 8개를 더 씁니다. 경우 목록은 problems/P2_tests.md 의 표.
+ //           기대값은 실행해 보기 전에 규칙 표를 보고 손으로 적습니다.
+ // 실행: 터미널에서 npm test
+ // 확인: P1 은 1 passed, P2 는 9 passed
+ // 커밋 메시지: p1: vitest / p2: tests
 
 import { test, expect } from "vitest";
-import { toDays } from "./public/logic.js";
+import { toDays, isGoodDay, summarize, reasons } from "./public/logic.js";
 
 // 주어짐: Open-Meteo 응답의 daily 와 같은 모양으로 손으로 만든 입력.
 // 기준 30 %, 10 km/h 에서 네 가지 경우가 하루씩 들어가게 고른 값입니다(P2 의 표).
@@ -29,3 +30,35 @@ test("toDays builds one object per day", () => {
 });
 
 // P2: 여기 아래에 테스트를 추가합니다. 위의 import 줄에 필요한 함수 이름도 추가합니다.
+test("good day when rain and wind are below the limits", () => {
+  expect(isGoodDay(days[0], limits)).toBe(true);
+});
+
+test("good day when rain and wind are exactly the limits", () => {
+  expect(isGoodDay(days[1], limits)).toBe(true);
+});
+
+test("not a good day when wind exceeds the limit", () => {
+  expect(isGoodDay(days[2], limits)).toBe(false);
+});
+
+test("not a good day when rain exceeds the limit", () => {
+  expect(isGoodDay(days[3], limits)).toBe(false);
+});
+
+test("summarize counts the good days", () => {
+  expect(summarize(days, limits)).toBe("good for a run on 2 of 4 days");
+});
+
+test("summarize works with no days", () => {
+  expect(summarize([], limits)).toBe("good for a run on 0 of 0 days");
+});
+
+test("reasons lists rain before wind when both exceed the limits", () => {
+  expect(reasons({ date: "x", max: 0, rain: 90, wind: 20 }, limits))
+    .toEqual(["rain", "wind"]);
+});
+
+test("reasons is empty when rain and wind equal the limits", () => {
+  expect(reasons(days[1], limits)).toEqual([]);
+});
