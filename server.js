@@ -12,9 +12,15 @@
 
 // P4 부터 여기 아래에 씁니다.
 
+
 import express from "express";
 import { getDaily } from "./openMeteo.js";
 import { toDays } from "./public/logic.js";
+
+if (!process.env.ADMIN_TOKEN) {
+  console.error("ADMIN_TOKEN is not set. Copy .env.example to .env.");
+  process.exit(1);
+}
 
 const app = express();
 const port = process.env.PORT ?? 3000;
@@ -24,6 +30,8 @@ const CITIES = {
   daejeon: { name: "Daejeon", lat: 36.3504, lon: 127.3845 },
   gangneung: { name: "Gangneung", lat: 37.7519, lon: 128.8761 },
 };
+
+const counts = {};
 
 app.use(express.static("public"));
 
@@ -39,6 +47,8 @@ app.get("/api/forecast", async (req, res) => {
       error: `Unknown city: ${cityKey}`,
     });
   }
+
+  counts[cityKey] = (counts[cityKey] ?? 0) + 1;
 
   const city = CITIES[cityKey];
 
@@ -57,8 +67,19 @@ app.get("/api/forecast", async (req, res) => {
   }
 });
 
+app.get("/api/stats", (req, res) => {
+  if (req.get("Authorization") !== `Bearer ${process.env.ADMIN_TOKEN}`) {
+    return res.status(401).json({
+      error: "Unauthorized",
+    });
+  }
+
+  res.json(counts);
+});
+
 app.listen(port, (error) => {
   if (error) throw error;
   console.log(`Listening on http://localhost:${port}`);
 });
+
 
