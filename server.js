@@ -11,10 +11,19 @@
 // 이 파일은 public/ 밖에 있습니다. 브라우저 주소창으로는 열리지 않습니다(P4 에서 확인).
 
 // P4 부터 여기 아래에 씁니다.
+
 import express from "express";
+import { getDaily } from "./openMeteo.js";
+import { toDays } from "./public/logic.js";
 
 const app = express();
 const port = process.env.PORT ?? 3000;
+
+const CITIES = {
+  seoul: { name: "Seoul", lat: 37.566, lon: 126.9784 },
+  daejeon: { name: "Daejeon", lat: 36.3504, lon: 127.3845 },
+  gangneung: { name: "Gangneung", lat: 37.7519, lon: 128.8761 },
+};
 
 app.use(express.static("public"));
 
@@ -22,7 +31,34 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/forecast", async (req, res) => {
+  const cityKey = req.query.city;
+
+  if (!Object.hasOwn(CITIES, cityKey)) {
+    return res.status(400).json({
+      error: `Unknown city: ${cityKey}`,
+    });
+  }
+
+  const city = CITIES[cityKey];
+
+  try {
+    const daily = await getDaily(city);
+    const days = toDays(daily);
+
+    res.json({
+      city: city.name,
+      days,
+    });
+  } catch (err) {
+    res.status(502).json({
+      error: err.message,
+    });
+  }
+});
+
 app.listen(port, (error) => {
   if (error) throw error;
   console.log(`Listening on http://localhost:${port}`);
 });
+
